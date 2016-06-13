@@ -50,8 +50,18 @@ scan_gh_pkgs()
 ```
 
 Produces a HTML file displaying an array of GitHub-styled tile graphs, one for each packge you have installed from 
-GitHub (presumably via `devtools::install_github()`).
+GitHub (presumably via `devtools::install_github()`). Commits for the last 12 months for each GiHub-loaded package 
+are obtained. Darker tiles indicate more commits were performed on that day. The red tile indicates when you installed 
+the packge. It should now be clear whether or not you installed before, during, or after a flurry of commits, or if the 
+developer has been active/quiet regarding that packge in the last 12 months.
 
 ![](https://github.com/jonocarroll/githubtools/blob/master/man/figures/scan.png?raw=true)
 
+This works best if you are authenticated to GitHub. Steps to achieve that to follow. Note also that this won't search any 
+packages you're currently forking, as they will be local installs. To view which packages you have installed in all your 
+libraries (note, this may be a lot) use the convenience wrapper to `devtools::session_info` which finds *all* installed 
+packages, not just those currently loaded.
 
+```R
+view_all_sources()
+```
