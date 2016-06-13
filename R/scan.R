@@ -1,4 +1,4 @@
-build_html <- function(img.dir) {
+build_html <- function(img.dir=".") {
   
   img_files <- dir(img.dir, pattern="*.png", full.names=TRUE)
   gh_html <- paste0('<html>\n   <head><h1>Generated: ',lubridate::today(),'</h1></head>\n   <body>
@@ -48,7 +48,7 @@ auto.page <- function(f) {
   (result_req)
 }
 
-check_all_github <- function(img.dir) {
+check_all_github <- function(img.dir=".") {
   
   library(github)
   library(magrittr)
@@ -133,11 +133,9 @@ check_all_github <- function(img.dir) {
   
 }
 
-scan_gh_pkgs <- function() {
+scan_gh_pkgs <- function(img.dir=".") {
   
-
-  
-  check_all_github("../ghimages/")
-  build_html("../ghimages/")
+  check_all_github(img.dir)
+  build_html(img.dir)
   
 }
