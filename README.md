@@ -41,6 +41,9 @@ Full credit to @noamross for the
 [noamross/htmlhelp](http://github.com/noamross/htmlhelp) package which inspired
 and enabled the use of the Rmd macro for help files.
 
+**NOTE**: This is likely to change to `githubfooter` in an update in the near future. 
+This is currently under development, so don't rely on it until it is stable.
+
 ### Scan installed GitHub packages and analyse them
 
 Think about your R library right now... How old are the packages you installed
