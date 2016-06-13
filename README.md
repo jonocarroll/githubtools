@@ -2,6 +2,15 @@
 
 The goal of githubtools is to ease the integration between GitHub and R. 
 
+## Installation
+
+You can install githubtools from github with:
+
+```R
+# install.packages("devtools")
+devtools::install_github("jonocarroll/githubtools")
+```
+
 ## Features
 
 ### Create a link back to the GitHub package right in the RStudio help viewer.
@@ -43,21 +52,6 @@ scan_gh_pkgs()
 Produces a HTML file displaying an array of GitHub-styled tile graphs, one for each packge you have installed from 
 GitHub (presumably via `devtools::install_github()`).
 
-![]()
+![](https://github.com/jonocarroll/githubtools/blob/master/man/figures/scan.png?raw=true)
 
-## Installation
 
-You can install githubtools from github with:
-
-```R
-# install.packages("devtools")
-devtools::install_github("jonocarroll/githubtools")
-```
-
-## Example
-
-This is a basic example which shows you how to solve a common problem:
-
-```R
-...
-```
