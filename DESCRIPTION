@@ -1,0 +1,21 @@
+Package: githubtools
+Title: Tools for building and using GitHub pkgs.
+Version: 0.0.0.9000
+Authors@R: person("Jonathan", "Carroll", email = "jono@jcarroll.com.au", role = c("aut", "cre"))
+Description: Provides a suite of tools to complement packages stored on or
+    loaded from GitHub. When building a package, this provides a Rmd macro to insert
+    a HTML popup bar in the help menu linking back to the GitHub project page to
+    encourage collaboration. Also able to scan the user's R library for packages
+    installed from GitHub, analyse their commit frequency, and report back.
+Depends:
+    R (>= 3.3.0)
+License: GPL (>=3)
+Encoding: UTF-8
+LazyData: TRUE
+Imports:
+    magrittr,
+    dplyr,
+    github,
+    lubridate,
+    ggplot2
+RoxygenNote: 5.0.1
