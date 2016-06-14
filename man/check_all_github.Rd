@@ -4,13 +4,19 @@
 \alias{check_all_github}
 \title{Obtain commit stats for one or more GitHub repos}
 \usage{
-check_all_github(pkg = NULL, img.dir = ".")
+check_all_github(pkg = NULL, img.dir = ".", max.pages = 10)
 }
 \arguments{
-\item{img.dir}{}
+\item{pkg}{character vector of packages to analyse (uses all if not set/\code{NULL})}
+
+\item{img.dir}{where to store the generated images}
+
+\item{max.pages}{maximum number of paginated results (30 commits per page) to scan}
 }
 \value{
+vector of repositories analysed (as author/repos)
 
+\feedbackfooter{'jonocarroll/githubtools'}{'R/scan.R'}{TRUE}
 }
 \description{
 Obtain commit stats for one or more GitHub repos

@@ -1,21 +1,64 @@
-build_html <- function(img.dir=".") {
+#' Generate a HTML Page of GitHub Tile Charts
+#'
+#' @param pkg packages to include in the page
+#' @param img.dir where the images are stored
+#' @param viewer.pane (unused) logical. Use the inbuilt viewer pane?
+#'
+#' @return location of the stored .html file
+#' 
+#' \feedbackfooter{'jonocarroll/githubtools'}{'R/scan.R'}{TRUE}
+#' 
+#' @export
+#' 
+build_html <- function(pkg=NULL, img.dir=".", viewer.pane=FALSE) {
+
+  img.dir <- normalizePath(img.dir, mustWork=FALSE)
   
-  img_files <- dir(img.dir, pattern="*.png", full.names=TRUE)
+  if(is.null(pkg)) {  
+    img_files <- dir(img.dir, pattern="*.png", full.names=TRUE)
+  } else {
+    all_img_files <- dir(img.dir, pattern=".png", full.names=TRUE)
+    img_matches <- vapply(X=sub("/","~",pkg), FUN=grepl, FUN.VALUE=logical(length(all_img_files)), all_img_files)
+    img_files <- all_img_files[apply(img_matches, 1, any)]
+  }
   gh_html <- paste0('<html>\n   <head><h1>Generated: ',lubridate::today(),'</h1></head>\n   <body>
                     <table cellspacing="0" border="0" style="margin:0; padding:0;">\n')
   for(i in img_files) {
     gh_html <- paste0(gh_html, '      <tr>
-                      <td><img style="width:100%; max-height:600px;" src="',i,'"</img></td>
+                      <td><img style="width:100%; max-height:600px;" src="file://',i,'"</img></td>
                       </tr>\n')
   }
   gh_html <- paste(gh_html, '      </table>\n   </body>\n</html>')
-  write(gh_html, file=paste0(img.dir,"/all_gh_img.html"))
-  viewer  <- getOption("viewer")
-  viewer(url=paste0(img.dir,"/all_gh_img.html"))
+  myViewer <- getOption("viewer")
+  if(!viewer.pane) {
+    htmlfile <- paste0(img.dir,"/all_gh_img.html")
+    message(paste0("Storing ",htmlfile," then loading it."))
+    write(gh_html, file=htmlfile)
+    myViewer(url=htmlfile)
+  } else {
+    warning("This currently isn't working. Maybe try a pull-request with a solution?")
+    # tmpfile <- tempfile(pattern="all_gh_img.html", fileext=".html")
+    # write(gh_html, file=tmpfile)
+    # myViewer(tmpfile, height=400)
+  }
+  # viewer  <- getOption("viewer")
+  return(htmlfile)
+  
 }
 
 # Make automated paging till response is empty
 # https://github.com/cscheid/rgithub/issues/30#issuecomment-150354560
+#' Automatically roll-over a search when paginated
+#'
+#' @param f call to execute
+#' @param max.pages max number of pages to traverse (exits earlier if fail or complete)
+#'
+#' @return evaluates the call and returns the content
+#' 
+#' \feedbackfooter{'jonocarroll/githubtools'}{'R/scan.R'}{TRUE}
+#' 
+#' @export
+#'
 auto.page <- function(f, max.pages=10) {
   
   f_call <- substitute(f)
@@ -47,7 +90,10 @@ auto.page <- function(f, max.pages=10) {
     i <- i + 1
     
     # only get max max.pages pages
-    if(i > max.pages) break
+    if(i > max.pages) {
+      message(paste0(" truncating at ",max.pages*30L," commits."), appendLF=FALSE)
+      break
+    }
   }
   
   result_req <- req
@@ -58,10 +104,13 @@ auto.page <- function(f, max.pages=10) {
 
 #' Obtain commit stats for one or more GitHub repos
 #'
-#' @param pkg
-#' @param img.dir 
+#' @param pkg character vector of packages to analyse (uses all if not set/\code{NULL})
+#' @param img.dir where to store the generated images
+#' @param max.pages maximum number of paginated results (30 commits per page) to scan
 #'
-#' @return
+#' @return vector of repositories analysed (as author/repos)
+#' 
+#' \feedbackfooter{'jonocarroll/githubtools'}{'R/scan.R'}{TRUE}
 #' 
 #' @import github
 #' @import magrittr
@@ -70,15 +119,18 @@ auto.page <- function(f, max.pages=10) {
 #' 
 #' @export
 #'
-#' @examples
-check_all_github <- function(pkg=NULL, img.dir=".") {
+check_all_github <- function(pkg=NULL, img.dir=".", max.pages=10) {
   
   img.loc <- normalizePath(img.dir, mustWork=FALSE)
   
+  # equivalent to 
+  # gh_list <- view_all_sources(github.only=FALSE)
+  # but intermediate values required
   all_inst <- installed.packages()
   pkg_list <- devtools::session_info(rownames(all_inst))$packages
   gh_list  <- pkg_list[grepl("Github",pkg_list$source), ]
-  
+
+    
   gh_pkg_loc          <- dplyr::add_rownames(data.frame(lib=all_inst[,2][names(all_inst[,2]) %in% gh_list$package]), "package")
   gh_pkg_loc$full_lib <- apply(gh_pkg_loc[,c("lib", "package")], 1, paste, collapse="/")
   
@@ -93,20 +145,27 @@ check_all_github <- function(pkg=NULL, img.dir=".") {
   ## c) an external package via author/repo; !installed &  fullname
   ## d) an external package via repo;        !installed & !fullname - can't work with this
   if(!is.null(pkg)) {
-    installed <- rep(NA, length(pkg))
-    fullname  <- rep(NA, length(pkg))
+    inst.det <- data.frame(pkg, installed=rep(NA, length(pkg)), fullname=rep(NA, length(pkg)))
+    # installed <- rep(NA, length(pkg))
+    # fullname  <- rep(NA, length(pkg))
     for(j in seq_along(pkg)) {
       if (pkg[j] %in% gh_list$repo) {
-        installed[j] <- TRUE
-        fullname[j]  <- TRUE
+        inst.det[j,"installed"] <- TRUE
+        inst.det[j,"fullname"] <- TRUE
+        # installed[j] <- TRUE
+        # fullname[j]  <- TRUE
       } else if (pkg[j] %in% gh_list$repodir) {
-        installed[j] <- TRUE
-        fullname[j]  <- FALSE 
+        inst.det[j,"installed"] <- TRUE
+        inst.det[j,"fullname"] <- FALSE
+        # installed[j] <- TRUE
+        # fullname[j]  <- FALSE 
       } else {
         message(paste0(pkg[j]," could not be found in your library, assuming you're just curious."))
-        installed[j] <- FALSE
+        inst.det[j,"installed"] <- FALSE
+        # installed[j] <- FALSE
         if (grepl("/",pkg[j])){
-          fullname[j] <- TRUE
+          inst.det[j,"fullname"] <- TRUE
+          # fullname[j] <- TRUE
         } else {
           stop(paste0(pkg[j]," doesn't appear to be the full name of a repo and no package of that name is in your library. Nothing more I can do."))
         }
@@ -114,24 +173,26 @@ check_all_github <- function(pkg=NULL, img.dir=".") {
     }
   } else {
     message("using all")
-    installed <- rep(TRUE, nrow(gh_list))
-    fullname  <- rep(TRUE, nrow(gh_list))
-    # pkg <- gh_list$repo
+    inst.det <- data.frame(pkg=gh_list$repo, installed=TRUE, fullname=TRUE)
+    # installed <- rep(TRUE, nrow(gh_list))
+    # fullname  <- rep(TRUE, nrow(gh_list))
+    pkg <- gh_list$repo
   }
   
   # print(pkg)
   # print(installed)
   # print(fullname)
+  # print(inst.det)
   
   ## grrr... testing against character(0) is a bad idea. just do the full logic
-  if(any(installed)) {
-    if (length(pkg[installed & fullname])>0 & length(pkg[installed & !fullname])>0) {
-      gh_list <- gh_list[pkg[installed & fullname] == gh_list$repo | pkg[installed & !fullname] == gh_list$repodir, ]
-    } else if (length(pkg[installed & fullname])>0 & length(pkg[installed & !fullname])==0) { 
-      gh_list <- gh_list[pkg[installed & fullname] == gh_list$repo, ]
-    } else if (length(pkg[installed & fullname])==0 & length(pkg[installed & !fullname])>0) { 
-      gh_list <- gh_list[pkg[installed & !fullname] == gh_list$repodir, ]
-    } else if (length(pkg[installed & fullname])==0 & length(pkg[installed & !fullname])==0) { 
+  if(any(inst.det$installed)) {
+    if (length(pkg[inst.det$installed & inst.det$fullname])>0 & length(pkg[inst.det$installed & !inst.det$fullname])>0) {
+      gh_list <- gh_list[pkg[inst.det$installed & inst.det$fullname] == gh_list$repo | pkg[inst.det$installed & !inst.det$fullname] == gh_list$repodir, ]
+    } else if (length(pkg[inst.det$installed & inst.det$fullname])>0 & length(pkg[inst.det$installed & !inst.det$fullname])==0) { 
+      gh_list <- gh_list[pkg[inst.det$installed & inst.det$fullname] == gh_list$repo, ]
+    } else if (length(pkg[inst.det$installed & inst.det$fullname])==0 & length(pkg[inst.det$installed & !inst.det$fullname])>0) { 
+      gh_list <- gh_list[pkg[inst.det$installed & !inst.det$fullname] == gh_list$repodir, ]
+    } else if (length(pkg[inst.det$installed & inst.det$fullname])==0 & length(pkg[inst.det$installed & !inst.det$fullname])==0) { 
       stop("I can do nothing more with this.")
     }
   } else {
@@ -141,17 +202,17 @@ check_all_github <- function(pkg=NULL, img.dir=".") {
   
   # print(gh_list)
   
-  if(any(!installed)) {
+  if(any(!inst.det$installed)) {
     # message("found non-installed packages")
-    gh_list <- rbind(gh_list, data.frame(package=sub(".*/","",pkg[!installed & fullname]),
+    gh_list <- rbind(gh_list, data.frame(package=sub(".*/","",pkg[!inst.det$installed & inst.det$fullname]),
                                          `*`=NA,
                                          version=NA,
                                          date=NA,
                                          source=NA,
-                                         repo=pkg[!installed & fullname],
-                                         author=sub("/.*","",pkg[!installed & fullname]),
-                                         repodir=sub(".*/","",pkg[!installed & fullname]),
-                                         age=NA, check.names=FALSE)
+                                         repo=pkg[!inst.det$installed & inst.det$fullname],
+                                         author=sub("/.*","",pkg[!inst.det$installed & inst.det$fullname]),
+                                         repodir=sub(".*/","",pkg[!inst.det$installed & inst.det$fullname]),
+                                         age=NA, check.names=FALSE, stringsAsFactors=FALSE)
     )}
   
   # full_list <- merge(gh_list, gh_pkg_loc, by="package")
@@ -170,12 +231,17 @@ check_all_github <- function(pkg=NULL, img.dir=".") {
     tryCatch(dir.create(img.loc), error=function(e) stop(e), finally=message("Directory created, saving images there."))
   }
   
+  github_setup()
+  
   for(i in 1:nrow(full_list)) {
     
-    message(paste0("Obtaining stats for ", full_list$repo[i], " "), appendLF=FALSE)
+    this.pkg.installed <- inst.det$installed[i]
+    this.full <- full_list[full_list$repo==inst.det$pkg[i] | full_list$repodir==inst.det$pkg[i],]
+    
+    message(paste0("Obtaining stats for ", inst.det$pkg[i], " "), appendLF=FALSE)
     
     year_ago <- format(lubridate::today() - lubridate::days(365), "%Y-%m-%dT%H:%M:%SZ")
-    ghres     <- auto.page(github::get.repository.commits(full_list$author[i],full_list$repodir[i],since=year_ago))
+    ghres     <- auto.page(github::get.repository.commits(this.full$author,this.full$repodir,since=year_ago), max.pages=max.pages)
     if(!ghres$ok) stop("something went wrong with the scrape (returned !ok)")
     commit_dates <- unlist(lapply(lapply(lapply(ghres$content, "[[", "commit"), "[[", "author"), "[[", "date"))
     
@@ -198,9 +264,13 @@ check_all_github <- function(pkg=NULL, img.dir=".") {
       contribsDF_agg %<>% merge(data.frame(c.date=seq(max(contribsDF_agg$c.date), lubridate::today(), "days"), nCommits=-1), all=TRUE)
     }
     
-    contribsDF_agg$c.fill <- as.character(cut(contribsDF_agg$nCommits, breaks=c(-1,0,1,5,10,20,1e5), 
-                                              right=FALSE, labels=c("#bbbbbb", "#eeeeee","#d6e685","#1e6823","#8cc665","#44a340")))
-    contribsDF_agg[contribsDF_agg$c.date==full_list$date[i],"c.fill"] <- "#ff0000"
+    contribsDF_agg$c.fill <- contribsDF_agg$nCommits
+    contribsDF_agg$c.fill <- cut(contribsDF_agg$nCommits, breaks=c(-1,0,1,5,10,20,1e5,1e7),
+                                              # right=FALSE, labels=c("#bbbbbb", "#eeeeee","#d6e685","#1e6823","#8cc665","#44a340")))
+                                              right=FALSE, labels=1:7)
+    # contribsDF_agg[contribsDF_agg$c.date==full_list$date[i],"c.fill"] <- "#ff0000"
+    # if (this.pkg.installed) contribsDF_agg[contribsDF_agg$c.date==this.full$date,"c.fill"] <- "#ff0000"
+    if (this.pkg.installed) contribsDF_agg[contribsDF_agg$c.date==this.full$date,"c.fill"] <- 7
     
     ## split into weeks
     contribsDF_agg$c.week  <- cut(contribsDF_agg$c.date, breaks="week", start.on.monday=FALSE, labels=FALSE)
@@ -215,34 +285,76 @@ check_all_github <- function(pkg=NULL, img.dir=".") {
     month.lab <- rl$values[-1]
     
     gg <- ggplot(contribsDF_agg, aes(x=c.week, y=c.day))
-    gg <- gg + geom_tile(fill=contribsDF_agg$c.fill, color="white", size=0.75)
-    gg <- gg + scale_fill_manual(values=contribsDF_agg$c.fill, guide=FALSE)
-    gg <- gg + scale_x_continuous(limits=c(0,max(contribsDF_agg$c.week)+1), breaks=month.pos, labels=month.lab)
+    gg <- gg + geom_tile(aes(fill=contribsDF_agg$c.fill), color="white", size=0.75)
+    gg <- gg + scale_x_continuous(limits=c(0,54), breaks=month.pos, labels=month.lab)
     gg <- gg + scale_y_reverse(breaks=seq(1,7,1), labels=c("","M","","W","","F",""))
-    gg <- gg + theme_minimal()
-    gg <- gg + theme(panel.grid.major=element_blank(),
-                     panel.grid.minor=element_blank())
-    gg <- gg + labs(x="", y="", title=paste0(full_list[i,"repo"]," -- ",as.integer(full_list[i,"age"],units="days")," days old"))
+    gg <- gg + theme_github()
+    gg <- gg + scale_fill_social("GitHub")
     gg <- gg + coord_fixed(ratio=1)
+    if(this.pkg.installed) {
+      gg <- gg + labs(title=paste0(this.full$repo," -- ",as.integer(this.full$age,units="days")," days old")) 
+    } else {
+      gg <- gg + labs(title=paste0(this.full$repo," -- "," (not installed locally)")) 
+    }
+    # gg <- gg + scale_fill_social("GitHub")
+    gg
+    # gg <- gg + scale_fill_manual(values=contribsDF_agg$c.fill, guide=FALSE)
+    # gg <- gg + scale_y_reverse(breaks=seq(1,7,1), labels=c("","M","","W","","F",""))
+    # gg <- gg + theme_minimal()
+    # gg <- gg + theme(panel.grid.major=element_blank(),
+    #                  panel.grid.minor=element_blank())
+    # gg <- gg + coord_fixed(ratio=1)
     
-    ggsave(gg, file=paste0(file.path(img.loc,sub("/","~",full_list[i,"repo"])),".png"), height=2, width=10)
-    
+    ggsave(gg, file=paste0(file.path(img.loc,sub("/","~",this.full$repo)),".png"), height=2, width=10)
+   
+    message("", appendLF=TRUE)
+     
   }
   
-}
-
-scan_gh_pkgs <- function(img.dir=".") {
-  
-  check_all_github(img.dir)
-  build_html(img.dir)
+  return(full_list$repo)
   
 }
 
-view_all_sources <- function() {
+#' Scan and analyse GitHub R packages
+#'
+#' @param pkg package to check (local or external)
+#' @param img.dir where to store generated images 
+#'
+#' @return NULL (used for the side effect of generating a .html file in \code{img.dir})
+#' 
+#' \feedbackfooter{'jonocarroll/githubtools'}{'R/scan.R'}{TRUE}
+#' 
+#' @export
+#'
+scan_gh_pkgs <- function(pkg=NULL, img.dir=".", max.commits=200) {
   
-  all_inst <- utils::installed.packages()
+  npages <- ceiling(max.commits %/% 30L + (max.commits %% 30L)/30L)
+  pkg_list <- check_all_github(pkg, img.dir, max.pages=npages)
+  build_html(pkg_list, img.dir)
+  
+}
+
+#' View Data Related to All Installed Packages
+#' 
+#' This may return a large \code{data.frame} depending on how many packages
+#' you have installed (not just loaded).
+#'
+#' @return data.frame of installed package information
+#' 
+#' \feedbackfooter{'jonocarroll/githubtools'}{'R/scan.R'}{TRUE}
+#' 
+#' @export
+#'
+view_all_sources <- function(github.only=FALSE) {
+  
+  # all_inst <- utils::installed.packages()
+  # pkg_list <- devtools::session_info(rownames(all_inst))$packages
+  
+  all_inst <- installed.packages()
   pkg_list <- devtools::session_info(rownames(all_inst))$packages
+  gh_list  <- pkg_list[grepl("Github",pkg_list$source), ]
   
-  return(pkg_list)
+  if(!github.only) return(pkg_list)
+  if(github.only)  return(gh_list)
   
 }

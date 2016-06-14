@@ -75,6 +75,9 @@ your libraries (note, this may be a lot) use the convenience wrapper to
 `devtools::session_info` which finds *all* installed packages, not just those
 currently loaded.
 
+*NOTE* this will scan the **master** branch of the requested repo. Development that occurs 
+on a forked branch will not be captured.
+
 ```R
 view_all_sources()
 ```
