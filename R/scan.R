@@ -11,7 +11,7 @@
 #' @export
 #' 
 build_html <- function(pkg=NULL, img.dir=".", viewer.pane=FALSE) {
-
+  
   img.dir <- normalizePath(img.dir, mustWork=FALSE)
   
   if(is.null(pkg)) {  
@@ -91,7 +91,7 @@ auto.page <- function(f, max.pages=10) {
     
     # only get max max.pages pages
     if(i > max.pages) {
-      message(paste0(" truncating at ",max.pages*30L," commits."), appendLF=FALSE)
+      message(paste0(" truncating at ",max.pages*30L," commits."), appendLF=TRUE)
       break
     }
   }
@@ -107,6 +107,8 @@ auto.page <- function(f, max.pages=10) {
 #' @param pkg character vector of packages to analyse (uses all if not set/\code{NULL})
 #' @param img.dir where to store the generated images
 #' @param max.pages maximum number of paginated results (30 commits per page) to scan
+#' @param ViewHTML logical. If \code{TRUE}, save the images to \code{img.dir} for loading into a 
+#'  HTML page, otherwise sequentially view the \code{ggplot} objects.
 #'
 #' @return vector of repositories analysed (as author/repos)
 #' 
@@ -119,7 +121,7 @@ auto.page <- function(f, max.pages=10) {
 #' 
 #' @export
 #'
-check_all_github <- function(pkg=NULL, img.dir=".", max.pages=10) {
+check_all_github <- function(pkg=NULL, img.dir=".", max.pages=10, ViewHTML=TRUE) {
   
   img.loc <- normalizePath(img.dir, mustWork=FALSE)
   
@@ -129,8 +131,8 @@ check_all_github <- function(pkg=NULL, img.dir=".", max.pages=10) {
   all_inst <- installed.packages()
   pkg_list <- devtools::session_info(rownames(all_inst))$packages
   gh_list  <- pkg_list[grepl("Github",pkg_list$source), ]
-
-    
+  
+  
   gh_pkg_loc          <- dplyr::add_rownames(data.frame(lib=all_inst[,2][names(all_inst[,2]) %in% gh_list$package]), "package")
   gh_pkg_loc$full_lib <- apply(gh_pkg_loc[,c("lib", "package")], 1, paste, collapse="/")
   
@@ -266,8 +268,8 @@ check_all_github <- function(pkg=NULL, img.dir=".", max.pages=10) {
     
     contribsDF_agg$c.fill <- contribsDF_agg$nCommits
     contribsDF_agg$c.fill <- cut(contribsDF_agg$nCommits, breaks=c(-1,0,1,5,10,20,1e5,1e7),
-                                              # right=FALSE, labels=c("#bbbbbb", "#eeeeee","#d6e685","#1e6823","#8cc665","#44a340")))
-                                              right=FALSE, labels=1:7)
+                                 # right=FALSE, labels=c("#bbbbbb", "#eeeeee","#d6e685","#1e6823","#8cc665","#44a340")))
+                                 right=FALSE, labels=1:7)
     # contribsDF_agg[contribsDF_agg$c.date==full_list$date[i],"c.fill"] <- "#ff0000"
     # if (this.pkg.installed) contribsDF_agg[contribsDF_agg$c.date==this.full$date,"c.fill"] <- "#ff0000"
     if (this.pkg.installed) contribsDF_agg[contribsDF_agg$c.date==this.full$date,"c.fill"] <- 7
@@ -296,19 +298,18 @@ check_all_github <- function(pkg=NULL, img.dir=".", max.pages=10) {
     } else {
       gg <- gg + labs(title=paste0(this.full$repo," -- "," (not installed locally)")) 
     }
-    # gg <- gg + scale_fill_social("GitHub")
-    gg
-    # gg <- gg + scale_fill_manual(values=contribsDF_agg$c.fill, guide=FALSE)
-    # gg <- gg + scale_y_reverse(breaks=seq(1,7,1), labels=c("","M","","W","","F",""))
-    # gg <- gg + theme_minimal()
-    # gg <- gg + theme(panel.grid.major=element_blank(),
-    #                  panel.grid.minor=element_blank())
-    # gg <- gg + coord_fixed(ratio=1)
+
     
-    ggsave(gg, file=paste0(file.path(img.loc,sub("/","~",this.full$repo)),".png"), height=2, width=10)
-   
+    if(!ViewHTML) {
+      message(paste0("\nPlotting ", this.full$repo), appendLF=TRUE)
+      print(gg)
+      grDevices::devAskNewPage(ask=TRUE)
+    } else {
+      ggsave(gg, file=paste0(file.path(img.loc,sub("/","~",this.full$repo)),".png"), height=2, width=10)
+    }
+    
     message("", appendLF=TRUE)
-     
+    
   }
   
   return(full_list$repo)
@@ -319,6 +320,8 @@ check_all_github <- function(pkg=NULL, img.dir=".", max.pages=10) {
 #'
 #' @param pkg package to check (local or external)
 #' @param img.dir where to store generated images 
+#' @param ViewHTML logical. If \code{TRUE}, load the relevant images from \code{img.dir} into a 
+#'  HTML page.
 #'
 #' @return NULL (used for the side effect of generating a .html file in \code{img.dir})
 #' 
@@ -326,11 +329,11 @@ check_all_github <- function(pkg=NULL, img.dir=".", max.pages=10) {
 #' 
 #' @export
 #'
-scan_gh_pkgs <- function(pkg=NULL, img.dir=".", max.commits=200) {
+scan_gh_pkgs <- function(pkg=NULL, img.dir=".", max.commits=200, ViewHTML=TRUE) {
   
   npages <- ceiling(max.commits %/% 30L + (max.commits %% 30L)/30L)
-  pkg_list <- check_all_github(pkg, img.dir, max.pages=npages)
-  build_html(pkg_list, img.dir)
+  pkg_list <- check_all_github(pkg, img.dir, max.pages=npages, ViewHTML=ViewHTML)
+  if(ViewHTML) build_html(pkg_list, img.dir)
   
 }
 

@@ -4,7 +4,8 @@
 \alias{check_all_github}
 \title{Obtain commit stats for one or more GitHub repos}
 \usage{
-check_all_github(pkg = NULL, img.dir = ".", max.pages = 10)
+check_all_github(pkg = NULL, img.dir = ".", max.pages = 10,
+  ViewHTML = TRUE)
 }
 \arguments{
 \item{pkg}{character vector of packages to analyse (uses all if not set/\code{NULL})}
@@ -12,6 +13,9 @@ check_all_github(pkg = NULL, img.dir = ".", max.pages = 10)
 \item{img.dir}{where to store the generated images}
 
 \item{max.pages}{maximum number of paginated results (30 commits per page) to scan}
+
+\item{ViewHTML}{logical. If \code{TRUE}, save the images to \code{img.dir} for loading into a 
+HTML page, otherwise sequentially view the \code{ggplot} objects.}
 }
 \value{
 vector of repositories analysed (as author/repos)

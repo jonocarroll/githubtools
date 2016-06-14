@@ -4,12 +4,16 @@
 \alias{scan_gh_pkgs}
 \title{Scan and analyse GitHub R packages}
 \usage{
-scan_gh_pkgs(pkg = NULL, img.dir = ".", max.commits = 200)
+scan_gh_pkgs(pkg = NULL, img.dir = ".", max.commits = 200,
+  ViewHTML = TRUE)
 }
 \arguments{
 \item{pkg}{package to check (local or external)}
 
 \item{img.dir}{where to store generated images}
+
+\item{ViewHTML}{logical. If \code{TRUE}, load the relevant images from \code{img.dir} into a 
+HTML page.}
 }
 \value{
 NULL (used for the side effect of generating a .html file in \code{img.dir})

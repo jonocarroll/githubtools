@@ -42,6 +42,7 @@ theme_github <- function() {
                      # axis.text.x=element_blank(),
                      axis.title=element_blank(),
                      plot.title=element_text(size=14))
+  # ret <- ret + theme(aspect.ratio=1)
   # ret <- ret + labs(x="", y="", title=paste0(full_list[i,"repo"]," -- ",as.integer(full_list[i,"age"],units="days")," days old"))
   ret <- ret + theme(complete = TRUE)
   
