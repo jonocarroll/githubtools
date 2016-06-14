@@ -12,11 +12,12 @@ build_html <- function(img.dir=".") {
   write(gh_html, file=paste0(img.dir,"/all_gh_img.html"))
   viewer  <- getOption("viewer")
   viewer(url=paste0(img.dir,"/all_gh_img.html"))
-  }
+}
 
 # Make automated paging till response is empty
 # https://github.com/cscheid/rgithub/issues/30#issuecomment-150354560
-auto.page <- function(f) {
+auto.page <- function(f, max.pages=10) {
+  
   f_call <- substitute(f)
   stopifnot(is.call(f_call))
   
@@ -26,20 +27,27 @@ auto.page <- function(f) {
   
   repeat {
     
-    message(paste0("obtaining page ",i))
+    # message(paste0("obtaining page ",i))
+    message(".", appendLF=FALSE)
+    
     # Specify the page to download
     f_call$page <- i
     
-    req <- eval(f_call, parent.frame())
+    req <- tryCatch({
+      eval(f_call, parent.frame())}, 
+      error = function(e) {
+        stop(e)
+      })
+    if(inherits(req, "try-error")) stop("something went wrong with the scrape (autopage)")
     
     # Last page has empty content
-    if (length(req$content)<=0) break
+    if (length(req$content) <= 0) break
     
     result_lst[[i]] <- req$content
-    i <- i+1
+    i <- i + 1
     
-    # only get max 10 pages
-    if(i > 10) break
+    # only get max max.pages pages
+    if(i > max.pages) break
   }
   
   result_req <- req
@@ -48,16 +56,28 @@ auto.page <- function(f) {
   (result_req)
 }
 
-check_all_github <- function(img.dir=".") {
+#' Obtain commit stats for one or more GitHub repos
+#'
+#' @param pkg
+#' @param img.dir 
+#'
+#' @return
+#' 
+#' @import github
+#' @import magrittr
+#' @import dplyr
+#' @import ggplot2
+#' 
+#' @export
+#'
+#' @examples
+check_all_github <- function(pkg=NULL, img.dir=".") {
   
-  library(github)
-  library(magrittr)
-  library(dplyr)
-  library(ggplot2)
+  img.loc <- normalizePath(img.dir, mustWork=FALSE)
   
   all_inst <- installed.packages()
   pkg_list <- devtools::session_info(rownames(all_inst))$packages
-  gh_list  <- pkg_list[grepl("Github",pkg_list$source),]
+  gh_list  <- pkg_list[grepl("Github",pkg_list$source), ]
   
   gh_pkg_loc          <- dplyr::add_rownames(data.frame(lib=all_inst[,2][names(all_inst[,2]) %in% gh_list$package]), "package")
   gh_pkg_loc$full_lib <- apply(gh_pkg_loc[,c("lib", "package")], 1, paste, collapse="/")
@@ -67,19 +87,97 @@ check_all_github <- function(img.dir=".") {
   gh_list$repodir <- sub(".*?\\/(.*)","\\1",         gh_list$repo)
   gh_list$age     <- lubridate::today() - as.Date(gh_list$date)
   
-  full_list <- merge(gh_list, gh_pkg_loc, by="package")
+  ## logic to determine if each pkg is 
+  ## a) an installed package via author/repo; installed &  fullname
+  ## b) an installed package via just repo;   installed & !fullname
+  ## c) an external package via author/repo; !installed &  fullname
+  ## d) an external package via repo;        !installed & !fullname - can't work with this
+  if(!is.null(pkg)) {
+    installed <- rep(NA, length(pkg))
+    fullname  <- rep(NA, length(pkg))
+    for(j in seq_along(pkg)) {
+      if (pkg[j] %in% gh_list$repo) {
+        installed[j] <- TRUE
+        fullname[j]  <- TRUE
+      } else if (pkg[j] %in% gh_list$repodir) {
+        installed[j] <- TRUE
+        fullname[j]  <- FALSE 
+      } else {
+        message(paste0(pkg[j]," could not be found in your library, assuming you're just curious."))
+        installed[j] <- FALSE
+        if (grepl("/",pkg[j])){
+          fullname[j] <- TRUE
+        } else {
+          stop(paste0(pkg[j]," doesn't appear to be the full name of a repo and no package of that name is in your library. Nothing more I can do."))
+        }
+      }
+    }
+  } else {
+    message("using all")
+    installed <- rep(TRUE, nrow(gh_list))
+    fullname  <- rep(TRUE, nrow(gh_list))
+    # pkg <- gh_list$repo
+  }
   
-  img.loc <- path.expand(img.dir)
-  if(!dir.exists(img.loc)) dir.create(img.loc)
+  # print(pkg)
+  # print(installed)
+  # print(fullname)
+  
+  ## grrr... testing against character(0) is a bad idea. just do the full logic
+  if(any(installed)) {
+    if (length(pkg[installed & fullname])>0 & length(pkg[installed & !fullname])>0) {
+      gh_list <- gh_list[pkg[installed & fullname] == gh_list$repo | pkg[installed & !fullname] == gh_list$repodir, ]
+    } else if (length(pkg[installed & fullname])>0 & length(pkg[installed & !fullname])==0) { 
+      gh_list <- gh_list[pkg[installed & fullname] == gh_list$repo, ]
+    } else if (length(pkg[installed & fullname])==0 & length(pkg[installed & !fullname])>0) { 
+      gh_list <- gh_list[pkg[installed & !fullname] == gh_list$repodir, ]
+    } else if (length(pkg[installed & fullname])==0 & length(pkg[installed & !fullname])==0) { 
+      stop("I can do nothing more with this.")
+    }
+  } else {
+    # message("none installed")
+    gh_list <- gh_list[0,]
+  }
+  
+  # print(gh_list)
+  
+  if(any(!installed)) {
+    # message("found non-installed packages")
+    gh_list <- rbind(gh_list, data.frame(package=sub(".*/","",pkg[!installed & fullname]),
+                                         `*`=NA,
+                                         version=NA,
+                                         date=NA,
+                                         source=NA,
+                                         repo=pkg[!installed & fullname],
+                                         author=sub("/.*","",pkg[!installed & fullname]),
+                                         repodir=sub(".*/","",pkg[!installed & fullname]),
+                                         age=NA, check.names=FALSE)
+    )}
+  
+  # full_list <- merge(gh_list, gh_pkg_loc, by="package")
+  full_list <- gh_list
+  
+  # print(full_list)
+  # print(nrow(gh_list))
+  # stop("deliberate")
+  
+  # img.loc <- path.expand(img.dir)
+  # img.loc <- img.dir
+  if(dir.exists(img.loc)) {
+    message(paste0("Found ",img.loc,", saving images there."))
+  } else {
+    message(paste0("Could not find directory ",img.loc,", attempting to create it."))
+    tryCatch(dir.create(img.loc), error=function(e) stop(e), finally=message("Directory created, saving images there."))
+  }
   
   for(i in 1:nrow(full_list)) {
     
-    message(paste0("Obtaining stats for ", full_list$repo[i]))
+    message(paste0("Obtaining stats for ", full_list$repo[i], " "), appendLF=FALSE)
     
     year_ago <- format(lubridate::today() - lubridate::days(365), "%Y-%m-%dT%H:%M:%SZ")
-    runk     <- auto.page(github::get.repository.commits(full_list$author[i],full_list$repodir[i],since=year_ago))
-    if(!runk$ok) stop("something went wrong with the scrape")
-    commit_dates <- unlist(lapply(lapply(lapply(runk$content, "[[", "commit"), "[[", "author"), "[[", "date"))
+    ghres     <- auto.page(github::get.repository.commits(full_list$author[i],full_list$repodir[i],since=year_ago))
+    if(!ghres$ok) stop("something went wrong with the scrape (returned !ok)")
+    commit_dates <- unlist(lapply(lapply(lapply(ghres$content, "[[", "commit"), "[[", "author"), "[[", "date"))
     
     contribsDF        <- data.frame(commit_dates, commits=1, stringsAsFactors=FALSE)
     contribsDF$c.date <- as.Date(contribsDF$commit_dates, format="%Y-%m-%dT%H:%M:%SZ")
@@ -137,5 +235,14 @@ scan_gh_pkgs <- function(img.dir=".") {
   
   check_all_github(img.dir)
   build_html(img.dir)
+  
+}
+
+view_all_sources <- function() {
+  
+  all_inst <- utils::installed.packages()
+  pkg_list <- devtools::session_info(rownames(all_inst))$packages
+  
+  return(pkg_list)
   
 }
