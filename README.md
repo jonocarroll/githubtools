@@ -1,3 +1,6 @@
+---
+output: pdf_document
+---
 # githubtools
 
 The goal of githubtools is to ease the integration between GitHub and R. 
