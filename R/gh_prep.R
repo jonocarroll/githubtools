@@ -11,7 +11,13 @@
 #'
 prepare_for_github_chart <- function(data_agg, primaryData, secondaryData="dummy") {
   
-  if (secondaryData == "dummy") data_agg$dummy <- -1 ## if the secondary column wasn't added, make sure it's there now
+  ## if the secondary column wasn't added, make sure it's there now
+  if (secondaryData == "dummy") { 
+    data_agg$dummy <- -1 
+    # data_agg[secondaryData <- data_agg$dummy
+  }
+  data_agg["primaryData"]   <- data_agg[primaryData]
+  data_agg["secondaryData"] <- data_agg[secondaryData]
   if (!all(c("date", primaryData, secondaryData) %in% names(data_agg))) stop("Columns missing from input.")
   
   if (min(data_agg$date) <= lubridate::today() - lubridate::years(1)) {
@@ -21,15 +27,23 @@ prepare_for_github_chart <- function(data_agg, primaryData, secondaryData="dummy
     ## extend to the last year
     data_agg %<>% 
       merge(data.frame(date = seq(lubridate::today() - lubridate::years(1), min(data_agg$date), "days"), 
-                       primaryData = -1, secondaryData = -1), 
+                       primaryData = -1, 
+                       secondaryData = -1), 
             all = TRUE)
   }
+  if (max(data_agg$date) <= lubridate::today()) {
+    ## add data up to today()
+    data_agg %<>% merge(data.frame(date = seq(max(data_agg$date), lubridate::today(), "days"), 
+                                   primaryData = -1, 
+                                   secondaryData = -1), 
+                        all = TRUE)
+  }
   
-  data_agg["secondaryTF"] <- NA_character_
-  data_agg[data_agg[secondaryData] > 0, "secondaryTF"] <- data_agg[data_agg[secondaryData] > 0, secondaryData]
-  data_agg[!data_agg[secondaryData] > 0, "secondaryTF"] <- ""
+  data_agg$secondaryTF <- NA_character_
+  data_agg[data_agg["secondaryData"] > 0, "secondaryTF"] <- data_agg[data_agg["secondaryData"] > 0, "secondaryData"]
+  data_agg[!data_agg["secondaryData"] > 0, "secondaryTF"] <- ""
   
-  data_agg$t.fill <- cut(unlist(data_agg[primaryData]), breaks = c(-1,0,1,5,10,20,1e5), right = FALSE, labels = 1:6)
+  data_agg$t.fill <- cut(unlist(data_agg["primaryData"]), breaks = c(-1,0,1,5,10,20,1e5,1e6), right = FALSE, labels = 1:7)
   
   ## split into weeks
   data_agg$c.week  <- cut(data_agg$date, breaks = "week", start.on.monday = FALSE, labels = FALSE)
@@ -74,9 +88,10 @@ create_github_chart <- function(gh_data, user, network = c("GitHub", "Twitter", 
   gg <- gg + scale_y_reverse(breaks = seq(1,7,1), labels = c("","M","","W","","F",""))
   gg <- gg + theme_github()
   gg <- gg + scale_fill_social(network)
-  gg <- gg + labs(title = paste0("Past 12 months on ",network), 
-                  subtitle = paste0("@", user), 
-                  x = "", y = "")
+  # gg <- gg + labs(title = paste0("Past 12 months on ",network), 
+  #                 subtitle = paste0("@", user), 
+  #                 x = "", y = "")
+  gg <- gg + labs(x = "", y = "")
   gg <- gg + coord_fixed(ratio = 1)
   return(gg)
 }
