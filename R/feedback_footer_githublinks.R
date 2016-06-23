@@ -1,5 +1,5 @@
 #' @importFrom RCurl getURL
-feedback_footer = function(repo, file=NULL) {
+github_overlay = function(repo, file=NULL) {
   message("in footer")
   no_htmlify()
   # fn_name = get_fn_name()

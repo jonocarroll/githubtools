@@ -78,7 +78,9 @@ try and remedy the failure that I've found to work include
 }
 }
 \examples{
-\dontrun{install_github("jonocarroll/butteRfly")} 
+\dontrun{
+install_github("jonocarroll/butteRfly")
+} 
 
 }
 \references{

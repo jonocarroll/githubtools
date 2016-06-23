@@ -33,19 +33,24 @@ div.rw-ui-container {
     color:#eeeeee;
 }
 
-span#gh-links {
+span#gh-links a {
   margin-top:20px;
   float:right;
   text-align:right;
   padding-right:10px;
   line-height:0px;
   vertical-align:middle;
+  position:relative;
+  z-index:9;
 }
 
 span#gh-links img {
-  height:20px;
-  margin-top:5px;
+  height:40px;
   vertical-align:middle;
+  float:left;
+  display:block;
+  margin-left:20px;
+  margin-top:20px;
 }
 
 #lift-anchor {
@@ -55,6 +60,7 @@ span#gh-links img {
     background:#ffffff;
     vertical-align:middle;
     text-align:center;
+    z-index:1;
 }
 
 #lift-anchor a {

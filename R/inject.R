@@ -103,9 +103,9 @@ install_remote <- function(remote, ..., quiet=FALSE) {
   
   for (ifile in allrfiles) {
     
-    cat(paste0("injecting to ",basename(ifile), "\n"))
+    # cat(paste0("injecting to ",basename(ifile), "\n"))
     
-    injection <- paste0("#' \\if{html}{\\Sexpr[stage=render, results=text]{githubtools:::feedback_footer(", 
+    injection <- paste0("#' \\if{html}{\\Sexpr[stage=render, results=text]{githubtools:::github_overlay(", 
                         "'",remote$username,"/",remote$repo,"',",
                         "'R/",basename(ifile),"')}}")
     
@@ -157,19 +157,22 @@ install_remote <- function(remote, ..., quiet=FALSE) {
     # allLines[returnLines] <- paste0("#'\n", injection, "\n#'\n", allLines[returnLines])
     
     cat(allLines, file = ifile, sep = "\n")
-    cat(allLines, file = paste0("/home/jono/tmpR/",basename(ifile)), sep = "\n")
     
     close(rcontent)
     
   }
   
-  cat(source)
+  # cat(source)
   
-  file.copy(paste0(source,"/NAMESPACE"), "~/tmpR/")
+  ## add the GitHub logo to the package help
+  manfigdir <- file.path(source, "man/figures")
+  if (!dir.exists(manfigdir)) dir.create(manfigdir)
+  file.copy(from = system.file("extdata", 'GitHub-Mark-Light-64px.png', package = "githubtools"),
+            to   = manfigdir)
   
   message("*** REBUILDING HELP FILES WITH INJECTED CODE ***")
   devtools::document(pkg = source)
-  message("DOCUMENTED.")
+  # message("DOCUMENTED.")
   retCode <- devtools:::install(source, ..., quiet = quiet, metadata = metadata)
   
   ## re-write the documentation
