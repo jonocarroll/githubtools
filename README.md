@@ -1,6 +1,3 @@
----
-output: pdf_document
----
 # githubtools
 
 The goal of githubtools is to ease the integration between GitHub and R. 
@@ -16,36 +13,15 @@ devtools::install_github("jonocarroll/githubtools")
 
 ## Features
 
-### Create a link back to the GitHub package right in the RStudio help viewer.
+### Create links back to an installed GitHub package right in the RStudio help viewer.
 
-An Rmd macro inserted at build introduces a discreet pull-up tab at the bottom
-of your help files
-
-```R
-#' An R function with nifty HTML documentation
-#'
-#' Some stuff about the function
-#'
-#' \feedbackfooter{'jonocarroll/htmlhelp'}{'R/hello.R'}{TRUE}
-#'
-#' @return Prints a value
-#' @export
-hello <- function() {
-  print("Hello, world!")
-}
-```
-
-If this macro is added with this package loaded, then the feature set will
-update when this package updates.
-
-![](https://camo.githubusercontent.com/8e6aab5c14977a3a5859912e767be74a2cdbc558/687474703a2f2f692e696d6775722e636f6d2f6456703561376a2e676966)
+![](http://i.imgur.com/CemtYVA.gif)
 
 Full credit to @noamross for the
 [noamross/htmlhelp](http://github.com/noamross/htmlhelp) package which inspired
-and enabled the use of the Rmd macro for help files.
-
-**NOTE**: This is likely to change to `githubfooter` in an update in the near future. 
-This is currently under development, so don't rely on it until it is stable.
+and enabled the use of the hijacking of `Rd2HTML`. Full details to follow, but this
+currently works on any package installed from GitHub (other than those that this package is 
+dependent on itself).
 
 ### Scan installed GitHub packages and analyse them
 
