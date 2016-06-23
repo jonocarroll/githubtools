@@ -7,7 +7,7 @@
 github_setup()
 }
 \value{
-a github context object that is used in every github API call issued by the \link{\code{github}} package.
+a github context object that is used in every github API call issued by the github package.
 }
 \description{
 #@param config_file location of the configuration file, default ~/.githuburlcheckr

@@ -1,21 +1,24 @@
 #' @importFrom RCurl getURL
 feedback_footer = function(repo, file=NULL) {
+  message("in footer")
   no_htmlify()
-  fn_name = get_fn_name()
+  # fn_name = get_fn_name()
   stylesheet = paste(readLines(system.file("doc", 'footer_style.css', package="htmlhelp")), collapse = "\n")
-  connection = !("try-error" %in% class(try(getURL('rating-widget.com'), silent=TRUE)))
-  script = ifelse(connection,
-                  paste(readLines(system.file("doc", 'rating-script.html', package="htmlhelp")), collapse = "\n"), '')
-
+  # connection = !("try-error" %in% class(try(getURL('rating-widget.com'), silent=TRUE)))
+  # script = ifelse(connection,
+                  # paste(readLines(system.file("doc", 'rating-script.html', package="htmlhelp")), collapse = "\n"), '')
+  script = ""
+  
   repo = paste0('http://github.com/', repo)
   if(is.null(file)) {
     file = repo
   } else {
     file = paste0(repo, '/blob/master/', file)
   }
-  new_issue = URLencode(paste0(repo, '/issues/new?body=', 'Feedback on `', fn_name, '()`.'))
-  rating = ifelse(connection, paste0('<div class="rw-ui-container" data-title="', packageName(), "-", fn_name, '"></div>'),
-                  '<div class="rw-ui-container">Internet connection required for ratings.</div>')
+  new_issue = URLencode(paste0(repo, '/issues/new?body=', 'Feedback on `', 'SOMENAME', '()`.'))
+  # rating = ifelse(connection, paste0('<div class="rw-ui-container" data-title="', packageName(), "-", fn_name, '"></div>'),
+                  # '<div class="rw-ui-container">Internet connection required for ratings.</div>')
+  rating = ""
   footer = sprintf('<div id="footer">
                    <span id="lift-anchor"><a>^</a></span>
                    %s

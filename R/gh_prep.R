@@ -88,9 +88,6 @@ create_github_chart <- function(gh_data, user, network = c("GitHub", "Twitter", 
   gg <- gg + scale_y_reverse(breaks = seq(1,7,1), labels = c("","M","","W","","F",""))
   gg <- gg + theme_github()
   gg <- gg + scale_fill_social(network)
-  # gg <- gg + labs(title = paste0("Past 12 months on ",network), 
-  #                 subtitle = paste0("@", user), 
-  #                 x = "", y = "")
   gg <- gg + labs(x = "", y = "")
   gg <- gg + coord_fixed(ratio = 1)
   return(gg)

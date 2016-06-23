@@ -4,7 +4,7 @@
 #'
 ##' #@param echo if TRUE print the credentials read from the file to the console.
 #'
-#' @return a github context object that is used in every github API call issued by the \link{\code{github}} package.
+#' @return a github context object that is used in every github API call issued by the github package.
 #'
 #' @import github
 #'
@@ -14,7 +14,7 @@
 #' \dontrun{
 #' ctx <- github_setup()
 #' }
-# gith_setup <- function(config_file="~/.githuburlcheckr", echo=FALSE) {
+# gith_setup <- function(config_file="~/.githuburlcheckr", echo=FALSE) {}
 github_setup <- function() {
   
   # if(file.exists(config_file)) {

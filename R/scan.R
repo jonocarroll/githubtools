@@ -4,9 +4,9 @@
 #' @param img.dir where the images are stored
 #' @param viewer.pane (unused) logical. Use the inbuilt viewer pane?
 #'
-#' @return location of the stored .html file
+#' @return location of the stored .html files
 #' 
-#' \feedbackfooter{'jonocarroll/githubtools'}{'R/scan.R'}{TRUE}
+#' \if{html}{\Sexpr[stage=render, results=text]{githubtools:::feedback_footer('jonocarroll/githubtools','R/scan.R')}}
 #' 
 #' @export
 #' 

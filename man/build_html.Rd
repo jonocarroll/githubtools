@@ -14,9 +14,9 @@ build_html(pkg = NULL, img.dir = ".", viewer.pane = FALSE)
 \item{viewer.pane}{(unused) logical. Use the inbuilt viewer pane?}
 }
 \value{
-location of the stored .html file
+location of the stored .html files
 
-\feedbackfooter{'jonocarroll/githubtools'}{'R/scan.R'}{TRUE}
+\if{html}{\Sexpr[stage=render, results=text]{githubtools:::feedback_footer('jonocarroll/githubtools','R/scan.R')}}
 }
 \description{
 Generate a HTML Page of GitHub Tile Charts
